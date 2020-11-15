@@ -3,7 +3,7 @@
  * Plugin Name: WP Webhooks - Manage Taxonomy Terms
  * Plugin URI: https://ironikus.com/downloads/manage-taxonomy-terms/
  * Description: A WP Webhooks and WP Webhooks Pro extension for managing taxonomy terms
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Ironikus
  * Author URI: https://ironikus.com/
  * License: GPL2
@@ -42,7 +42,7 @@ if( !class_exists( 'WP_Webhooks_Manage_Taxonomy_Terms' ) ){
 		public function add_webhook_actions_content( $actions ){
 
 			$actions[] = $this->action_set_terms_content();
-			$actions[] = $this->action_set_terms_meta_content();
+			$actions[] = $this->action_manage_term_meta_content();
 
 			return $actions;
 		}
@@ -54,7 +54,7 @@ if( !class_exists( 'WP_Webhooks_Manage_Taxonomy_Terms' ) ){
 		 * all of the currently activated triggers.
 		 *
 		 * We always send three different properties with the defined wehook.
-		 * @param $action - the defined action defined within the action_delete_user_content function
+		 * @param $action - the defined action
 		 * @param $webhook - The webhook itself
 		 * @param $api_key - an api_key if defined
 		 */
@@ -70,9 +70,9 @@ if( !class_exists( 'WP_Webhooks_Manage_Taxonomy_Terms' ) ){
 						$this->action_set_terms();
 					}
 					break;
-				case 'set_terms_meta':
-					if( isset( $available_actions['set_terms_meta'] ) ){
-						$this->action_set_terms_meta();
+				case 'manage_term_meta':
+					if( isset( $available_actions['manage_term_meta'] ) ){
+						$this->action_manage_term_meta();
 					}
 					break;
 			}
@@ -174,7 +174,7 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
     <li>
         <strong>$terms</strong> (string)
         <br>
-        <?php echo WPWHPRO()->helpers->translate( "Contains the value of the <strong>terms</strong> argument that was set within the webbhook call.", $translation_ident ); ?>
+        <?php echo WPWHPRO()->helpers->translate( "Contains the value of the <strong>terms</strong> argument that was set within the webhook call.", $translation_ident ); ?>
     </li>
     <li>
         <strong>$taxonomy</strong> (string)
@@ -251,25 +251,25 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
 		/**
 		 * ######################
 		 * ###
-		 * #### ENDPOINT: set_terms_meta
+		 * #### ENDPOINT: manage_term_meta
 		 * ###
 		 * ######################
 		 */
 
-		public function action_set_terms_meta_content(){
+		public function action_manage_term_meta_content(){
 
 			$parameter = array(
-				'taxonomy'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( '(String) The slug of the taxonomy you want to update the items of.', 'action-set_terms_meta-content' ) ),
-				'term_value'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( '(Mixed) The identifier of the term value. This can be the term id, name or slug. If you want to change the value type, use the get_term_by argument. Default: term id', 'action-set_terms_meta-content' ) ),
-				'tax_meta'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( ' (String) A JSON formatted string containing all of the term meta values you want to create/update/delete. Please see the description for further details.', 'action-set_terms_meta-content' ) ),
-				'get_term_by'            => array( 'short_description' => WPWHPRO()->helpers->translate( '(String) An identifier on what term_value data you want to use to fetch the term. Default: term_id - Please see the description for further details.', 'action-set_terms_meta-content' ) ),
-				'do_action'          => array( 'short_description' => WPWHPRO()->helpers->translate( 'Advanced: Register a custom action after WP Webhooks fires this webhook. More infos are in the description.', 'action-set_terms_meta-content' ) )
+				'taxonomy'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( '(String) The slug of the taxonomy you want to update the items of.', 'action-manage_term_meta-content' ) ),
+				'term_value'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( '(Mixed) The identifier of the term value. This can be the term id, name or slug. If you want to change the value type, use the get_term_by argument. Default: term id', 'action-manage_term_meta-content' ) ),
+				'manage_meta_data'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( ' (String) A JSON formatted string containing all of the term meta values you want to create/update/delete. Please see the description for further details.', 'action-manage_term_meta-content' ) ),
+				'get_term_by'            => array( 'short_description' => WPWHPRO()->helpers->translate( '(String) An identifier on what term_value data you want to use to fetch the term. Default: term_id - Please see the description for further details.', 'action-manage_term_meta-content' ) ),
+				'do_action'          => array( 'short_description' => WPWHPRO()->helpers->translate( 'Advanced: Register a custom action after WP Webhooks fires this webhook. More infos are in the description.', 'action-manage_term_meta-content' ) )
 			);
 
 			$returns = array(
-				'success'        => array( 'short_description' => WPWHPRO()->helpers->translate( '(Bool) True if the action was successful, false if not. E.g. array( \'success\' => true )', 'action-set_terms_meta-content' ) ),
-				'data'           => array( 'short_description' => WPWHPRO()->helpers->translate( '(mixed) The taxonomy term ids on success or wp_error on failure.', 'action-set_terms_meta-content' ) ),
-				'msg'            => array( 'short_description' => WPWHPRO()->helpers->translate( '(string) A message with more information about the current request. E.g. array( \'msg\' => "This action was successful." )', 'action-set_terms_meta-content' ) ),
+				'success'        => array( 'short_description' => WPWHPRO()->helpers->translate( '(Bool) True if the action was successful, false if not. E.g. array( \'success\' => true )', 'action-manage_term_meta-content' ) ),
+				'data'           => array( 'short_description' => WPWHPRO()->helpers->translate( '(mixed) The taxonomy term id on success or wp_error on failure, including other values from the request.', 'action-manage_term_meta-content' ) ),
+				'msg'            => array( 'short_description' => WPWHPRO()->helpers->translate( '(string) A message with more information about the current request. E.g. array( \'msg\' => "This action was successful." )', 'action-manage_term_meta-content' ) ),
 			);
 
 			ob_start();
@@ -278,11 +278,46 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
     "success": true,
     "msg": "Taxonomy term meta was upated successfully.",
     "data": {
-        "term_id": 92,
-        "taxonomy": "download_category",
-        "get_term_by": "slug",
-        "term_value": "test",
-        "tax_meta": "{\n  \"meta_key_1\": \"ironikus-delete\",\n  \"another_meta_key\": \"This is my second meta key!\",\n  \"third_meta_key\": \"ironikus-serialize{\\\"price\\\": \\\"100\\\"}\"\n}",
+        "term_id": "91",
+        "taxonomy": "category",
+        "get_term_by": false,
+        "term_value": "91",
+        "manage_meta_data": {
+            "success": true,
+            "msg": "The meta data was successfully executed.",
+            "data": {
+                "add_term_meta": [
+                    {
+                        "meta_key": "first_add_custom_key",
+                        "meta_value": "Some custom value",
+                        "unique": false,
+                        "response": 26
+                    },
+                    {
+                        "meta_key": "second_add_custom_key",
+                        "meta_value": {
+                            "some_array_key": "Some array Value"
+                        },
+                        "unique": true,
+                        "response": 27
+                    }
+                ],
+                "update_term_meta": [
+                    {
+                        "meta_key": "update_custom_key",
+                        "meta_value": "Some custom value",
+                        "prev_value": false,
+                        "response": 28
+                    },
+                    {
+                        "meta_key": "second_update_custom_key",
+                        "meta_value": "The new value",
+                        "prev_value": "The previous value",
+                        "response": 29
+                    }
+                ]
+            }
+        },
         "do_action": ""
     }
 }
@@ -290,25 +325,25 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
 			<?php
 			$returns_code = ob_get_clean();
 
-			$translation_ident = "action-set_terms_meta-description";
+			$translation_ident = "action-manage_term_meta-description";
 
 			ob_start();
 ?>
 
 <?php echo WPWHPRO()->helpers->translate( "This webhook action is used to update taxonomy term meta on a taxonomy term via a webhook call.", $translation_ident ); ?>
 <br>
-<?php echo WPWHPRO()->helpers->translate( "This description is uniquely made for the <strong>set_terms_meta</strong> webhook action.", $translation_ident ); ?>
+<?php echo WPWHPRO()->helpers->translate( "This description is uniquely made for the <strong>manage_term_meta</strong> webhook action.", $translation_ident ); ?>
 <br>
 <?php echo WPWHPRO()->helpers->translate( "In case you want to first understand on how to setup webhook actions in general, please check out the following manuals:", $translation_ident ); ?>
 <br>
 <a title="Go to ironikus.com/docs" target="_blank" href="https://ironikus.com/docs/article-categories/get-started/">https://ironikus.com/docs/article-categories/get-started/</a>
 <br><br>
-<h4><?php echo WPWHPRO()->helpers->translate( "How to use <strong>set_terms_meta</strong>", $translation_ident ); ?></h4>
+<h4><?php echo WPWHPRO()->helpers->translate( "How to use <strong>manage_term_meta</strong>", $translation_ident ); ?></h4>
 <ol>
-    <li><?php echo WPWHPRO()->helpers->translate( "The first argument you need to set within your webhook action request is the <strong>action</strong> argument. This argument is always required. Please set it to <strong>set_terms_meta</strong>.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "The first argument you need to set within your webhook action request is the <strong>action</strong> argument. This argument is always required. Please set it to <strong>manage_term_meta</strong>.", $translation_ident ); ?></li>
     <li><?php echo WPWHPRO()->helpers->translate( "It is also required to set the <strong>taxonomy</strong> argument. This must contain the taxonomy slug.", $translation_ident ); ?></li>
     <li><?php echo WPWHPRO()->helpers->translate( "Another argument that needs to be set is the <strong>term_value</strong> argument, which should contain either the term id, the term slug or the term name. Please see the <strong>Special Arguments list for further details.</strong>", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "Lastly, it is required to add the <strong>tax_meta</strong> argument, which must contain a JSON formatted string as stated below within the <strong>Special Arguments</strong> list.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "Lastly, it is required to add the <strong>manage_meta_data</strong> argument, which must contain a JSON formatted string as stated below within the <strong>Special Arguments</strong> list.", $translation_ident ); ?></li>
     <li><?php echo WPWHPRO()->helpers->translate( "All the other arguments are optional and just extend the process of managing the taxonomy term meta.", $translation_ident ); ?></li>
 </ol>
 <br><br>
@@ -327,64 +362,97 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
 <br>
 <hr>
 
-<h5><?php echo WPWHPRO()->helpers->translate( "tax_meta", $translation_ident ); ?></h5>
-<?php echo WPWHPRO()->helpers->translate( "This argument is specifically designed to add/update or remove taxonomy term meta on your existing taxonomy term.", $translation_ident ); ?>
+<h5><?php echo WPWHPRO()->helpers->translate( "manage_meta_data", $translation_ident ); ?></h5>
+<?php echo WPWHPRO()->helpers->translate( "This argument integrates the full features of managing term related meta values.", $translation_ident ); ?>
 <br>
-<?php echo WPWHPRO()->helpers->translate( "To create/update or delete custom meta values, we offer you two different ways:", $translation_ident ); ?>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "<strong>Please note</strong>: This argument is very powerful and requires some good understanding of JSON. It is integrated with the commonly used functions for managing term meta within WordPress. You can find a list of all avaialble functions here: ", $translation_ident ); ?>
+<ul>
+    <li><strong>add_term_meta()</strong>: <a title="Go to WordPress" target="_blank" href="https://developer.wordpress.org/reference/functions/add_term_meta/">https://developer.wordpress.org/reference/functions/add_term_meta/</a></li>
+    <li><strong>update_term_meta()</strong>: <a title="Go to WordPress" target="_blank" href="https://developer.wordpress.org/reference/functions/update_term_meta/">https://developer.wordpress.org/reference/functions/update_term_meta/</a></li>
+    <li><strong>delete_term_meta()</strong>: <a title="Go to WordPress" target="_blank" href="https://developer.wordpress.org/reference/functions/delete_term_meta/">https://developer.wordpress.org/reference/functions/delete_term_meta/</a></li>
+</ul>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "Down below you will find a complete JSON example that shows you how to use each of the functions above.", $translation_ident ); ?>
+<br>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "We also offer JSON to array/object serialization for single term meta values. This means, you can turn JSON into a serialized array or object.", $translation_ident ); ?>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "This argument accepts a JSON construct as an input. This construct contains each available function as a top-level key within the first layer and the assigned data respectively as a value. If you want to learn more about each line, please take a closer look at the bottom of the example.", $translation_ident ); ?>
+<pre>{
+   "add_term_meta":[
+      {
+        "meta_key": "first_custom_key",
+        "meta_value": "Some custom value"
+      },
+      {
+        "meta_key": "second_custom_key",
+        "meta_value": { "some_array_key": "Some array Value" },
+        "unique": true
+      } 
+    ],
+   "update_term_meta":[
+      {
+        "meta_key": "first_custom_key",
+        "meta_value": "Some custom value"
+      },
+      {
+        "meta_key": "second_custom_key",
+        "meta_value": "The new value",
+        "prev_value": "The previous value"
+      } 
+    ],
+   "delete_term_meta":[
+      {
+        "meta_key": "first_custom_key"
+      },
+      {
+        "meta_key": "second_custom_key",
+        "meta_value": "Target specific value"
+      } 
+    ]
+}</pre>
+<?php echo WPWHPRO()->helpers->translate( "Down below you will find a list that explains each of the top level keys.", $translation_ident ); ?>
 <ol>
     <li>
-        <strong><?php echo WPWHPRO()->helpers->translate( "String method", $translation_ident ); ?></strong>
+        <strong><?php echo WPWHPRO()->helpers->translate( "add_term_meta", $translation_ident ); ?></strong>
         <br>
-        <?php echo WPWHPRO()->helpers->translate( "This method allows you to add/update or delete the taxonomy term meta using a simple string. To make it work, separate the meta key from the value using a comma (,). To separate multiple meta settings from each other, simply separate them with a semicolon (;). To remove a meta value, simply set as a value <strong>ironikus-delete</strong>", $translation_ident ); ?>
-        <pre>meta_key_1,meta_value_1;my_second_key,ironikus-delete</pre>
-        <?php echo WPWHPRO()->helpers->translate( "<strong>IMPORTANT:</strong> Please note that if you want to use values that contain commas or semicolons, the string method does not work. In this case, please use the JSON method.", $translation_ident ); ?>
+        <?php echo WPWHPRO()->helpers->translate( "This key refers to the <strong>add_term_meta()</strong> function of WordPress:", $translation_ident ); ?> <a title="Go to WordPress" target="_blank" href="https://developer.wordpress.org/reference/functions/add_term_meta/">https://developer.wordpress.org/reference/functions/add_term_meta/</a>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "In the example above, you will find two entries within the add_term_meta key. The first one shows the default behavior using only the meta key and the value. This causes the meta key to be created without checking upfront if it exists - that allows you to create the meta value multiple times.", $translation_ident ); ?>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "As seen in the second entry, you will find a third key called <strong>unique</strong> that allows you to check upfront if the meta key exists already. If it does, the meta entry is neither created, nor updated. Set the value to <strong>true</strong> to check against existing ones. Default: false", $translation_ident ); ?>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "If you look closely to the second entry again, the value included is not a string, but a JSON construct, which is considered as an array and will therefore be serialized. The given value will be saved to the database in the following format: <code>a:1:{s:14:\"some_array_key\";s:16:\"Some array Value\";}</code>", $translation_ident ); ?>
     </li>
     <li>
-    <strong><?php echo WPWHPRO()->helpers->translate( "JSON method", $translation_ident ); ?></strong>
+        <strong><?php echo WPWHPRO()->helpers->translate( "update_term_meta", $translation_ident ); ?></strong>
         <br>
-        <?php echo WPWHPRO()->helpers->translate( "This method allows you to add/update or remove the taxonomy term meta using a JSON formatted string. To make it work, add the meta key as the key and the meta value as the value. To delete a meta value, simply set the value to <strong>ironikus-delete</strong>. Here's an example on how this looks like:", $translation_ident ); ?>
-        <pre>{
-  "meta_key_1": "This is my meta value 1",
-  "another_meta_key": "This is my second meta key!"
-  "third_meta_key": "ironikus-delete"
-}</pre>
+        <?php echo WPWHPRO()->helpers->translate( "This key refers to the <strong>update_term_meta()</strong> function of WordPress:", $translation_ident ); ?> <a title="Go to WordPress" target="_blank" href="https://developer.wordpress.org/reference/functions/update_term_meta/">https://developer.wordpress.org/reference/functions/update_term_meta/</a>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "The example above shows you two entries for this function. The first one is the default set up thats used in most cases. Simply define the meta key and the meta value and the key will be updated if it does exist and if it does not exist, it will be created.", $translation_ident ); ?>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "The third argument, as seen in the second entry, allows you to check against a previous value before updating. That causes that the meta value will only be updated if the previous key fits to whats currently saved within the database. Default: ''", $translation_ident ); ?>
+    </li>
+    <li>
+        <strong><?php echo WPWHPRO()->helpers->translate( "delete_term_meta", $translation_ident ); ?></strong>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "This key refers to the <strong>delete_term_meta()</strong> function of WordPress:", $translation_ident ); ?> <a title="Go to WordPress" target="_blank" href="https://developer.wordpress.org/reference/functions/delete_term_meta/">https://developer.wordpress.org/reference/functions/delete_term_meta/</a>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "Within the example above, you will see that only the meta key is required for deleting an entry. This will cause all meta keys on this term, with the same key, to be deleted.", $translation_ident ); ?>
+        <br>
+        <?php echo WPWHPRO()->helpers->translate( "The second argument allows you to target only a specific meta key/value combination. This gets important if you want to target a specific meta key/value combination and not delete all available entries for the given term. Default: ''", $translation_ident ); ?>
     </li>
 </ol>
-<strong><?php echo WPWHPRO()->helpers->translate( "Advanced", $translation_ident ); ?></strong>: <?php echo WPWHPRO()->helpers->translate( "We also offer JSON to array/object serialization for single taxonomy term meta values. This means, you can turn JSON into a serialized array or object.", $translation_ident ); ?>
-<br>
-<?php echo WPWHPRO()->helpers->translate( "As an example: The following JSON <code>{\"price\": \"100\"}</code> will turn into <code>O:8:\"stdClass\":1:{s:5:\"price\";s:3:\"100\";}</code> with default serialization or into <code>a:1:{s:5:\"price\";s:3:\"100\";}</code> with array serialization.", $translation_ident ); ?>
+<strong><?php echo WPWHPRO()->helpers->translate( "Some tipps:", $translation_ident ); ?></strong>
 <ol>
-    <li>
-        <strong><?php echo WPWHPRO()->helpers->translate( "Object serialization", $translation_ident ); ?></strong>
-        <br>
-        <?php echo WPWHPRO()->helpers->translate( "This method allows you to serialize a JSON to an object using the default json_decode() function of PHP.", $translation_ident ); ?>
-        <br>
-        <?php echo WPWHPRO()->helpers->translate( "To serialize your JSON to an object, you need to add the following string in front of the escaped JSON within the value field of your single meta value of the meta_input argument: <code>ironikus-serialize</code>. Here's a full example:", $translation_ident ); ?>
-        <pre>{
-  "meta_key_1": "This is my meta value 1",
-  "another_meta_key": "This is my second meta key!",
-  "third_meta_key": "ironikus-serialize{\"price\": \"100\"}"
-}</pre>
-        <?php echo WPWHPRO()->helpers->translate( "This example will create three taxonomy term meta entries. The third entry has the meta key <strong>third_meta_key</strong> and a serialized meta value of <code>O:8:\"stdClass\":1:{s:5:\"price\";s:3:\"100\";}</code>. The string <code>ironikus-serialize</code> in front of the escaped JSON will tell our plugin to serialize the value. Please note that the JSON value, which you include within the original JSON string of the meta_input argument, needs to be escaped.", $translation_ident ); ?>
-    </li>
-    <li>
-        <strong><?php echo WPWHPRO()->helpers->translate( "Array serialization", $translation_ident ); ?></strong>
-        <br>
-        <?php echo WPWHPRO()->helpers->translate( "This method allows you to serialize a JSON to an array using the json_decode( \$json, true ) function of PHP.", $translation_ident ); ?>
-        <br>
-        <?php echo WPWHPRO()->helpers->translate( "To serialize your JSON to an array, you need to add the following string in front of the escaped JSON within the value field of your single meta value of the meta_input argument: <code>ironikus-serialize-array</code>. Here's a full example:", $translation_ident ); ?>
-        <pre>{
-  "meta_key_1": "This is my meta value 1",
-  "another_meta_key": "This is my second meta key!",
-  "third_meta_key": "ironikus-serialize-array{\"price\": \"100\"}"
-}</pre>
-        <?php echo WPWHPRO()->helpers->translate( "This example will create three taxonomy term meta entries. The third entry has the meta key <strong>third_meta_key</strong> and a serialized meta value of <code>a:1:{s:5:\"price\";s:3:\"100\";}</code>. The string <code>ironikus-serialize-array</code> in front of the escaped JSON will tell our plugin to serialize the value. Please note that the JSON value, which you include within the original JSON string of the meta_input argument, needs to be escaped.", $translation_ident ); ?>
-    </li>
+    <li><?php echo WPWHPRO()->helpers->translate( "You can include the value for this argument as a simple string to your webhook payload or you integrate it directly as JSON into your JSON payload (if you send a raw JSON response).", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "Changing the order of the functions within the JSON causes the term meta to behave differently. If you, for example, add the <strong>delete_term_meta</strong> key before the <strong>update_term_meta</strong> key, the meta values will first be deleted and then added/updated.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "The webhook response contains a validted array that shows each initialized meta entry, as well as the response from its original WordPress function. This way you can see if the meta value was adjusted accordingly.", $translation_ident ); ?></li>
 </ol>
-<hr>
 
 <h5><?php echo WPWHPRO()->helpers->translate( "do_action", $translation_ident ); ?></h5>
-<?php echo WPWHPRO()->helpers->translate( "The <strong>do_action</strong> argument is an advanced webhook for developers. It allows you to fire a custom WordPress hook after the <strong>set_terms_meta</strong> action was fired.", $translation_ident ); ?>
+<?php echo WPWHPRO()->helpers->translate( "The <strong>do_action</strong> argument is an advanced webhook for developers. It allows you to fire a custom WordPress hook after the <strong>manage_term_meta</strong> action was fired.", $translation_ident ); ?>
 <br>
 <?php echo WPWHPRO()->helpers->translate( "You can use it to trigger further logic after the webhook action. Here's an example:", $translation_ident ); ?>
 <br>
@@ -412,17 +480,17 @@ function my_custom_callback_function( $term_id, $return_args ){
 			$description = ob_get_clean();
 
 			return array(
-				'action'            => 'set_terms_meta', //required
+				'action'            => 'manage_term_meta', //required
 				'parameter'         => $parameter,
 				'returns'           => $returns,
 				'returns_code'      => $returns_code,
-				'short_description' => WPWHPRO()->helpers->translate( 'Create, update and delete taxonomy term meta via a webbhook call.', 'action-set_terms_meta-content' ),
+				'short_description' => WPWHPRO()->helpers->translate( 'Create, update and delete taxonomy term meta via a webhook call.', 'action-manage_term_meta-content' ),
 				'description'       => $description
 			);
 
 		}
 
-		public function action_set_terms_meta() {
+		public function action_manage_term_meta() {
 
 			$response_body = WPWHPRO()->helpers->get_response_body();
 			$return_args = array(
@@ -434,12 +502,12 @@ function my_custom_callback_function( $term_id, $return_args ){
 			$taxonomy = WPWHPRO()->helpers->validate_request_value( $response_body['content'], 'taxonomy' ); //mndtry
 			$get_term_by = WPWHPRO()->helpers->validate_request_value( $response_body['content'], 'get_term_by' );
 			$term_value = WPWHPRO()->helpers->validate_request_value( $response_body['content'], 'term_value' ); //mndtry
-			$tax_meta = WPWHPRO()->helpers->validate_request_value( $response_body['content'], 'tax_meta' );
+			$manage_meta_data = WPWHPRO()->helpers->validate_request_value( $response_body['content'], 'manage_meta_data' );
 
 			$do_action      = sanitize_title( WPWHPRO()->helpers->validate_request_value( $response_body['content'], 'do_action' ) );
 
 			if( empty( $term_value ) ){
-				$return_args['msg'] = WPWHPRO()->helpers->translate( "The term_value argument cannot be empty.", 'action-set_terms_meta' );
+				$return_args['msg'] = WPWHPRO()->helpers->translate( "The term_value argument cannot be empty.", 'action-manage_term_meta' );
 				WPWHPRO()->webhook->echo_response_data( $return_args );
 				die();
 			}
@@ -447,13 +515,13 @@ function my_custom_callback_function( $term_id, $return_args ){
 			if( ! is_numeric( $term_value ) ){
 				$term_obj = get_term_by( $get_term_by, $term_value, $taxonomy );
 				if( empty( $term_obj ) ){
-					$return_args['msg'] = WPWHPRO()->helpers->translate( "We could not find any term for your given data.", 'action-set_terms_meta' );
+					$return_args['msg'] = WPWHPRO()->helpers->translate( "We could not find any term for your given data.", 'action-manage_term_meta' );
 					WPWHPRO()->webhook->echo_response_data( $return_args );
 					die();
 				}
 
 				if( is_array( $term_obj ) ){
-					$return_args['msg'] = WPWHPRO()->helpers->translate( "We found multiple entries for your given taxonomy term. Please specify the taxonomy argument.", 'action-set_terms_meta' );
+					$return_args['msg'] = WPWHPRO()->helpers->translate( "We found multiple entries for your given taxonomy term. Please specify the taxonomy argument.", 'action-manage_term_meta' );
 					WPWHPRO()->webhook->echo_response_data( $return_args );
 					die();
 				}
@@ -462,54 +530,8 @@ function my_custom_callback_function( $term_id, $return_args ){
 			} else {
 				$term_id = $term_value;
 			}
-
-			if( ! WPWHPRO()->helpers->is_json( $tax_meta ) ){
-				$return_args['msg'] = WPWHPRO()->helpers->translate( "The tax_meta argument does not contain a valid JSON.", 'action-set_terms_meta' );
-				WPWHPRO()->webhook->echo_response_data( $return_args );
-				die();
-			}
-
-			$tax_meta_data = json_decode( $tax_meta, true );
-			$validated_meta = array();
-			foreach( $tax_meta_data as $skey => $sval ){
-
-				if( ! empty( $skey ) ){
-					if( $sval == 'ironikus-delete' ){
-
-						delete_term_meta( $term_id, $skey );
-
-					} else {
-
-						$ident = 'ironikus-serialize';
-						if( substr( $sval , 0, strlen( $ident ) ) === $ident ){
-							$serialized_value = trim( str_replace( $ident, '', $sval ),' ' );
-
-							//Allow array validation
-							$sa_ident = '-array';
-							if( is_string( $serialized_value ) && substr( $serialized_value , 0, strlen( $sa_ident ) ) === $sa_ident ){
-								$serialized_value = trim( str_replace( $sa_ident, '', $serialized_value ),' ' );
-
-								if( WPWHPRO()->helpers->is_json( $serialized_value ) ){
-									$serialized_value = json_decode( $serialized_value, true );
-								}
-							} else {
-								if( WPWHPRO()->helpers->is_json( $serialized_value ) ){
-									$serialized_value = json_decode( $serialized_value );
-								}
-							}
-
-							$validated_meta[ $skey ] = $serialized_value;
-
-						} else {
-							$validated_meta[ $skey ] = maybe_unserialize( $sval );
-						}
-					}
-				}
-			}
-
-			foreach( $validated_meta as $meta_key => $meta_value ){
-				update_term_meta( $term_id, $meta_key, $meta_value );
-			}
+			
+			$meta_response = $this->manage_term_meta_data( $term_id, $manage_meta_data );
  
 			$return_args['success'] = true;
 			$return_args['data'] = array(
@@ -517,10 +539,10 @@ function my_custom_callback_function( $term_id, $return_args ){
 				'taxonomy' => $taxonomy,
 				'get_term_by' => $get_term_by,
 				'term_value' => $term_value,
-				'tax_meta' => $tax_meta,
+				'manage_meta_data' => $meta_response,
 				'do_action' => $do_action,
 			);
-			$return_args['msg'] = WPWHPRO()->helpers->translate( "Taxonomy term meta was upated successfully.", 'action-set_terms_meta' );
+			$return_args['msg'] = WPWHPRO()->helpers->translate( "Taxonomy term meta was upated successfully.", 'action-manage_term_meta' );
 
 			if( ! empty( $do_action ) ){
 				do_action( $do_action, $term_id, $return_args );
@@ -529,6 +551,108 @@ function my_custom_callback_function( $term_id, $return_args ){
 			WPWHPRO()->webhook->echo_response_data( $return_args );
 
 			die();
+		}
+
+		public function manage_term_meta_data( $term_id, $term_meta_data ){
+			$response = array(
+				'success' => false,
+				'msg' => '',
+				'data' => array(),
+			);
+			
+			if( ! empty( $term_meta_data ) ){
+	
+				if( WPWHPRO()->helpers->is_json( $term_meta_data ) ){
+					$term_meta_data = json_decode( $term_meta_data, true );
+				}
+	
+				if( is_array( $term_meta_data ) ){
+					foreach( $term_meta_data as $function => $meta_data ){
+						switch( $function ){
+							case 'add_term_meta':
+								if( ! isset( $response['data']['add_term_meta'] ) ){
+									$response['data']['add_term_meta'] = array();
+								}
+	
+								foreach( $meta_data as $add_row_key => $add_single_meta_data ){
+									if( isset( $add_single_meta_data['meta_key'] ) && isset( $add_single_meta_data['meta_value'] ) ){
+	
+										$unique = false;
+										if( isset( $add_single_meta_data['unique'] ) ){
+											$unique = ( ! empty( $add_single_meta_data['unique'] ) ) ? true : false;
+										}
+	
+										$add_response = add_term_meta( $term_id, $add_single_meta_data['meta_key'], $add_single_meta_data['meta_value'], $unique );
+	
+										$response['data']['add_term_meta'][] = array(
+											'meta_key' => $add_single_meta_data['meta_key'],
+											'meta_value' => $add_single_meta_data['meta_value'],
+											'unique' => $unique,
+											'response' => $add_response,
+										);
+									}
+								}
+							break;
+							case 'update_term_meta':
+								if( ! isset( $response['data']['update_term_meta'] ) ){
+									$response['data']['update_term_meta'] = array();
+								}
+	
+								foreach( $meta_data as $add_row_key => $update_single_meta_data ){
+									if( isset( $update_single_meta_data['meta_key'] ) && isset( $update_single_meta_data['meta_value'] ) ){
+	
+										$prev_value = false;
+										if( isset( $update_single_meta_data['prev_value'] ) ){
+											$prev_value = $update_single_meta_data['prev_value'];
+										}
+	
+										$update_response = update_term_meta( $term_id, $update_single_meta_data['meta_key'], $update_single_meta_data['meta_value'], $prev_value );
+	
+										$response['data']['update_term_meta'][] = array(
+											'meta_key' => $update_single_meta_data['meta_key'],
+											'meta_value' => $update_single_meta_data['meta_value'],
+											'prev_value' => $prev_value,
+											'response' => $update_response,
+										);
+									}
+								}
+							break;
+							case 'delete_term_meta':
+								if( ! isset( $response['data']['delete_term_meta'] ) ){
+									$response['data']['delete_term_meta'] = array();
+								}
+	
+								foreach( $meta_data as $add_row_key => $delete_single_meta_data ){
+									if( isset( $delete_single_meta_data['meta_key'] ) ){
+	
+										$match_meta_value = '';
+										if( isset( $delete_single_meta_data['meta_value'] ) ){
+											$match_meta_value = $delete_single_meta_data['meta_value'];
+										}
+	
+										$delete_response = delete_term_meta( $term_id, $delete_single_meta_data['meta_key'], $match_meta_value );
+	
+										$response['data']['delete_term_meta'][] = array(
+											'meta_key' => $delete_single_meta_data['meta_key'],
+											'meta_value' => $match_meta_value,
+											'response' => $delete_response,
+										);
+									}
+								}
+							break;
+						}
+					}
+	
+					$response['success'] = true;
+					$response['msg'] = WPWHPRO()->helpers->translate( 'The meta data was successfully executed.', 'manage-meta-data' );
+				} else {
+					$response['msg'] = WPWHPRO()->helpers->translate( 'Could not decode the meta data.', 'manage-meta-data' );
+				}
+			} else {
+				$response['msg'] = WPWHPRO()->helpers->translate( 'No custom term meta given.', 'manage-meta-data' );
+			}
+	
+			return $response;
 		}
 
 	} // End class
