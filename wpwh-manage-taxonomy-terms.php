@@ -3,7 +3,7 @@
  * Plugin Name: WP Webhooks - Manage Taxonomy Terms
  * Plugin URI: https://ironikus.com/downloads/manage-taxonomy-terms/
  * Description: A WP Webhooks and WP Webhooks Pro extension for managing taxonomy terms
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: Ironikus
  * Author URI: https://ironikus.com/
  * License: GPL2
@@ -19,10 +19,53 @@ if( !class_exists( 'WP_Webhooks_Manage_Taxonomy_Terms' ) ){
 
 	class WP_Webhooks_Manage_Taxonomy_Terms{
 
+		private $wpmt_use_new_filter = null;
+
 		public function __construct() {
 
-			add_action( 'wpwhpro/webhooks/add_webhooks_actions', array( $this, 'add_webhook_actions' ), 20, 3 );
+			if( $this->wpwh_use_new_action_filter() ){
+				add_filter( 'wpwhpro/webhooks/add_webhook_actions', array( $this, 'add_webhook_actions' ), 20, 4 );
+			} else {
+				add_action( 'wpwhpro/webhooks/add_webhooks_actions', array( $this, 'add_webhook_actions' ), 20, 3 );
+			}
 			add_filter( 'wpwhpro/webhooks/get_webhooks_actions', array( $this, 'add_webhook_actions_content' ), 20 );
+		}
+
+		/**
+		 * ######################
+		 * ###
+		 * #### HELPERS
+		 * ###
+		 * ######################
+		 */
+
+		public function wpwh_use_new_action_filter(){
+
+			if( $this->wpmt_use_new_filter !== null ){
+				return $this->wpmt_use_new_filter;
+			}
+
+			$return = false;
+			$version_current = '0';
+			$version_needed = '0';
+	
+			if( defined( 'WPWHPRO_VERSION' ) ){
+				$version_current = WPWHPRO_VERSION;
+				$version_needed = '4.1.0';
+			}
+	
+			if( defined( 'WPWH_VERSION' ) ){
+				$version_current = WPWH_VERSION;
+				$version_needed = '3.1.0';
+			}
+	
+			if( version_compare( (string) $version_current, (string) $version_needed, '>=') ){
+				$return = true;
+			}
+
+			$this->wpmt_use_new_filter = $return;
+
+			return $return;
 		}
 
 		/**
@@ -58,24 +101,44 @@ if( !class_exists( 'WP_Webhooks_Manage_Taxonomy_Terms' ) ){
 		 * @param $webhook - The webhook itself
 		 * @param $api_key - an api_key if defined
 		 */
-		public function add_webhook_actions( $action, $webhook, $api_key ){
+		public function add_webhook_actions( $response, $action, $webhook, $api_key = '' ){
 
-			$active_webhooks = WPWHPRO()->settings->get_active_webhooks();
+			//Backwards compatibility prior 4.1.0 (wpwhpro) or 3.1.0 (wpwh)
+			if( ! $this->wpwh_use_new_action_filter() ){
+				$api_key = $webhook;
+				$webhook = $action;
+				$action = $response;
 
-			$available_actions = $active_webhooks['actions'];
+				$active_webhooks = WPWHPRO()->settings->get_active_webhooks();
+				$available_actions = $active_webhooks['actions'];
+
+				if( ! isset( $available_actions[ $action ] ) ){
+					return $response;
+				}
+			}
+
+			$return_data = null;
 
 			switch( $action ){
 				case 'set_terms':
-					if( isset( $available_actions['set_terms'] ) ){
-						$this->action_set_terms();
-					}
+					$return_data = $this->action_set_terms();
 					break;
 				case 'manage_term_meta':
-					if( isset( $available_actions['manage_term_meta'] ) ){
-						$this->action_manage_term_meta();
-					}
+					$return_data = $this->action_manage_term_meta();
 					break;
 			}
+
+			//Make sure we only fire the response in case the old logic is used
+			if( $return_data !== null && ! $this->wpwh_use_new_action_filter() ){
+				WPWHPRO()->webhook->echo_response_data( $return_data );
+				die();
+			}
+
+			if( $return_data !== null ){
+				$response = $return_data;
+			}
+			
+			return $response;
 		}
 
 		/**
@@ -87,6 +150,8 @@ if( !class_exists( 'WP_Webhooks_Manage_Taxonomy_Terms' ) ){
 		 */
 
 		public function action_set_terms_content(){
+
+			$translation_ident = "action-set_terms-content";
 
 			$parameter = array(
 				'object_id'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( 'The object to relate to. (Post ID)', 'action-set_terms-content' ) ),
@@ -103,51 +168,21 @@ if( !class_exists( 'WP_Webhooks_Manage_Taxonomy_Terms' ) ){
 			);
 
 			ob_start();
-			?>
-            <pre>
-$return_args = array(
-	'success' => false,
-	'msg' => '',
-	'data' => '',
-);
-        </pre>
-			<?php
-			$returns_code = ob_get_clean();
-
-			$translation_ident = "action-set_terms-description";
-
-			ob_start();
-?>
-
-<?php echo WPWHPRO()->helpers->translate( "This webhook action is used to assign a whole taxonomy term to a post via a webhook call.", $translation_ident ); ?>
-<br>
-<?php echo WPWHPRO()->helpers->translate( "This description is uniquely made for the <strong>set_terms</strong> webhook action.", $translation_ident ); ?>
-<br>
-<?php echo WPWHPRO()->helpers->translate( "In case you want to first understand on how to setup webhook actions in general, please check out the following manuals:", $translation_ident ); ?>
-<br>
-<a title="Go to ironikus.com/docs" target="_blank" href="https://ironikus.com/docs/article-categories/get-started/">https://ironikus.com/docs/article-categories/get-started/</a>
-<br><br>
-<h4><?php echo WPWHPRO()->helpers->translate( "How to use <strong>set_terms</strong>", $translation_ident ); ?></h4>
-<ol>
-    <li><?php echo WPWHPRO()->helpers->translate( "The first argument you need to set within your webhook action request is the <strong>action</strong> argument. This argument is always required. Please set it to <strong>set_terms</strong>.", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "It is also required to set the post id of the post you want to assign the taxonomy term to. You can do that by using the <strong>object_id</strong> argument.", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "The last required argument is <strong>taxonomy</strong>. Please set it to the slug of the taxonomy you would like to assign.", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "All the other arguments are optional and just extend the process of assigning a taxonomy to a post.", $translation_ident ); ?></li>
-</ol>
-<br><br>
-<h4><?php echo WPWHPRO()->helpers->translate( "Special Arguments", $translation_ident ); ?></h4>
-<br>
-<h5><?php echo WPWHPRO()->helpers->translate( "terms", $translation_ident ); ?></h5>
+		?>
 <?php echo WPWHPRO()->helpers->translate( "To append taxonomy terms, simple separate them with a comma. You can either use a single term slug, single term id, or array of either term slugs or ids. Here is an example:", $translation_ident ); ?>
 <pre>term-1,term-2,term-3</pre>
 <?php echo WPWHPRO()->helpers->translate( "<strong>Important</strong>: Passing an empty value will remove all related terms.", $translation_ident ); ?>
-<br>
-<hr>
-<h5><?php echo WPWHPRO()->helpers->translate( "append", $translation_ident ); ?></h5>
+		<?php
+		$parameter['terms']['description'] = ob_get_clean();
+
+			ob_start();
+		?>
 <?php echo WPWHPRO()->helpers->translate( "Set this argument to <strong>yes</strong> if you to append the taxonomies. If the argument is set to <strong>no</strong>, all existing taxonomies on the given post (via the object_id argument) will be removed before the new ones are added. Default is <strong>no</strong>", $translation_ident ); ?>
-<br>
-<hr>
-<h5><?php echo WPWHPRO()->helpers->translate( "do_action", $translation_ident ); ?></h5>
+		<?php
+		$parameter['append']['description'] = ob_get_clean();
+
+		ob_start();
+		?>
 <?php echo WPWHPRO()->helpers->translate( "The <strong>do_action</strong> argument is an advanced webhook for developers. It allows you to fire a custom WordPress hook after the <strong>set_terms</strong> action was fired.", $translation_ident ); ?>
 <br>
 <?php echo WPWHPRO()->helpers->translate( "You can use it to trigger further logic after the webhook action. Here's an example:", $translation_ident ); ?>
@@ -187,6 +222,39 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
         <?php echo WPWHPRO()->helpers->translate( "Contains <strong>true</strong> if the <strong>append</strong> argument was set to <strong>yes</strong> and <strong>false</strong> if it was set to <strong>no</strong>.", $translation_ident ); ?>
     </li>
 </ol>
+		<?php
+		$parameter['do_action']['description'] = ob_get_clean();
+
+			ob_start();
+			?>
+            <pre>
+$return_args = array(
+	'success' => false,
+	'msg' => '',
+	'data' => '',
+);
+        </pre>
+			<?php
+			$returns_code = ob_get_clean();
+
+			ob_start();
+?>
+
+<?php echo WPWHPRO()->helpers->translate( "This webhook action is used to assign a whole taxonomy term to a post via a webhook call.", $translation_ident ); ?>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "This description is uniquely made for the <strong>set_terms</strong> webhook action.", $translation_ident ); ?>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "In case you want to first understand on how to setup webhook actions in general, please check out the following manuals:", $translation_ident ); ?>
+<br>
+<a title="Go to ironikus.com/docs" target="_blank" href="https://ironikus.com/docs/article-categories/get-started/">https://ironikus.com/docs/article-categories/get-started/</a>
+<br><br>
+<h4><?php echo WPWHPRO()->helpers->translate( "How to use <strong>set_terms</strong>", $translation_ident ); ?></h4>
+<ol>
+    <li><?php echo WPWHPRO()->helpers->translate( "The first argument you need to set within your webhook action request is the <strong>action</strong> argument. This argument is always required. Please set it to <strong>set_terms</strong>.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "It is also required to set the post id of the post you want to assign the taxonomy term to. You can do that by using the <strong>object_id</strong> argument.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "The last required argument is <strong>taxonomy</strong>. Please set it to the slug of the taxonomy you would like to assign.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "All the other arguments are optional and just extend the process of assigning a taxonomy to a post.", $translation_ident ); ?></li>
+</ol>
             <?php
 			$description = ob_get_clean();
 
@@ -219,8 +287,7 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
 
 			if( empty( $object_id ) || empty( $taxonomy ) ){
 				$return_args['msg'] = WPWHPRO()->helpers->translate( "Object id and/or taxonomy not defined.", 'action-set_terms' );
-				WPWHPRO()->webhook->echo_response_data( $return_args );
-				die();
+				return $return_args;
 			}
 
 			$term_array = explode( ',', trim( $terms, ',' ) );
@@ -243,9 +310,7 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
 				do_action( $do_action, $return_args, $object_id, $terms, $taxonomy, $append );
 			}
 
-			WPWHPRO()->webhook->echo_response_data( $return_args );
-
-			die();
+			return $return_args;
 		}
 
 		/**
@@ -257,6 +322,8 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
 		 */
 
 		public function action_manage_term_meta_content(){
+
+			$translation_ident = "action-manage_term_meta-description";
 
 			$parameter = array(
 				'taxonomy'            => array( 'required' => true, 'short_description' => WPWHPRO()->helpers->translate( '(String) The slug of the taxonomy you want to update the items of.', 'action-manage_term_meta-content' ) ),
@@ -273,96 +340,25 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
 			);
 
 			ob_start();
-			?>
-            <pre>{
-    "success": true,
-    "msg": "Taxonomy term meta was upated successfully.",
-    "data": {
-        "term_id": "91",
-        "taxonomy": "category",
-        "get_term_by": false,
-        "term_value": "91",
-        "manage_meta_data": {
-            "success": true,
-            "msg": "The meta data was successfully executed.",
-            "data": {
-                "add_term_meta": [
-                    {
-                        "meta_key": "first_add_custom_key",
-                        "meta_value": "Some custom value",
-                        "unique": false,
-                        "response": 26
-                    },
-                    {
-                        "meta_key": "second_add_custom_key",
-                        "meta_value": {
-                            "some_array_key": "Some array Value"
-                        },
-                        "unique": true,
-                        "response": 27
-                    }
-                ],
-                "update_term_meta": [
-                    {
-                        "meta_key": "update_custom_key",
-                        "meta_value": "Some custom value",
-                        "prev_value": false,
-                        "response": 28
-                    },
-                    {
-                        "meta_key": "second_update_custom_key",
-                        "meta_value": "The new value",
-                        "prev_value": "The previous value",
-                        "response": 29
-                    }
-                ]
-            }
-        },
-        "do_action": ""
-    }
-}
-        </pre>
-			<?php
-			$returns_code = ob_get_clean();
-
-			$translation_ident = "action-manage_term_meta-description";
+		?>
+<?php echo WPWHPRO()->helpers->translate( "Since taxonomy term slugs are not unique outside of the taxonomy, it is required to set the taxonomy slug. Please note, that it must be the slug of the taxonomy and not the name or label.", $translation_ident ); ?>
+		<?php
+		$parameter['taxonomy']['description'] = ob_get_clean();
 
 			ob_start();
-?>
-
-<?php echo WPWHPRO()->helpers->translate( "This webhook action is used to update taxonomy term meta on a taxonomy term via a webhook call.", $translation_ident ); ?>
-<br>
-<?php echo WPWHPRO()->helpers->translate( "This description is uniquely made for the <strong>manage_term_meta</strong> webhook action.", $translation_ident ); ?>
-<br>
-<?php echo WPWHPRO()->helpers->translate( "In case you want to first understand on how to setup webhook actions in general, please check out the following manuals:", $translation_ident ); ?>
-<br>
-<a title="Go to ironikus.com/docs" target="_blank" href="https://ironikus.com/docs/article-categories/get-started/">https://ironikus.com/docs/article-categories/get-started/</a>
-<br><br>
-<h4><?php echo WPWHPRO()->helpers->translate( "How to use <strong>manage_term_meta</strong>", $translation_ident ); ?></h4>
-<ol>
-    <li><?php echo WPWHPRO()->helpers->translate( "The first argument you need to set within your webhook action request is the <strong>action</strong> argument. This argument is always required. Please set it to <strong>manage_term_meta</strong>.", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "It is also required to set the <strong>taxonomy</strong> argument. This must contain the taxonomy slug.", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "Another argument that needs to be set is the <strong>term_value</strong> argument, which should contain either the term id, the term slug or the term name. Please see the <strong>Special Arguments list for further details.</strong>", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "Lastly, it is required to add the <strong>manage_meta_data</strong> argument, which must contain a JSON formatted string as stated below within the <strong>Special Arguments</strong> list.", $translation_ident ); ?></li>
-    <li><?php echo WPWHPRO()->helpers->translate( "All the other arguments are optional and just extend the process of managing the taxonomy term meta.", $translation_ident ); ?></li>
-</ol>
-<br><br>
-<h4><?php echo WPWHPRO()->helpers->translate( "Special Arguments", $translation_ident ); ?></h4>
-<br>
-<h5><?php echo WPWHPRO()->helpers->translate( "taxonomy", $translation_ident ); ?></h5>
-<?php echo WPWHPRO()->helpers->translate( "Since taxonomy term slugs are not unique outside of the taxonomy, it is required to set the taxonomy slug. Please note, that it must be the slug of the taxonomy and not the name or label.", $translation_ident ); ?>
-<br>
-<hr>
-<h5><?php echo WPWHPRO()->helpers->translate( "term_value", $translation_ident ); ?></h5>
+		?>
 <?php echo WPWHPRO()->helpers->translate( "The term value contains either the term id, the term slug or the term name. Which value you set must be determined within the <strong>get_term_by</strong> argument. Default is the term id", $translation_ident ); ?>
-<br>
-<hr>
-<h5><?php echo WPWHPRO()->helpers->translate( "get_term_by", $translation_ident ); ?></h5>
-<?php echo WPWHPRO()->helpers->translate( "This argument determines the type for the <strong>term_value</strong> argument. Possible values are: <code>id</code> (term id), <code>slug</code>, or <code>name</code>. Default: id", $translation_ident ); ?>
-<br>
-<hr>
+		<?php
+		$parameter['term_value']['description'] = ob_get_clean();
 
-<h5><?php echo WPWHPRO()->helpers->translate( "manage_meta_data", $translation_ident ); ?></h5>
+			ob_start();
+		?>
+<?php echo WPWHPRO()->helpers->translate( "This argument determines the type for the <strong>term_value</strong> argument. Possible values are: <code>id</code> (term id), <code>slug</code>, or <code>name</code>. Default: id", $translation_ident ); ?>
+		<?php
+		$parameter['get_term_by']['description'] = ob_get_clean();
+
+			ob_start();
+		?>
 <?php echo WPWHPRO()->helpers->translate( "This argument integrates the full features of managing term related meta values.", $translation_ident ); ?>
 <br>
 <br>
@@ -450,8 +446,11 @@ function my_custom_callback_function( $return_args, $object_id, $terms, $taxonom
     <li><?php echo WPWHPRO()->helpers->translate( "Changing the order of the functions within the JSON causes the term meta to behave differently. If you, for example, add the <strong>delete_term_meta</strong> key before the <strong>update_term_meta</strong> key, the meta values will first be deleted and then added/updated.", $translation_ident ); ?></li>
     <li><?php echo WPWHPRO()->helpers->translate( "The webhook response contains a validted array that shows each initialized meta entry, as well as the response from its original WordPress function. This way you can see if the meta value was adjusted accordingly.", $translation_ident ); ?></li>
 </ol>
+		<?php
+		$parameter['manage_meta_data']['description'] = ob_get_clean();
 
-<h5><?php echo WPWHPRO()->helpers->translate( "do_action", $translation_ident ); ?></h5>
+			ob_start();
+		?>
 <?php echo WPWHPRO()->helpers->translate( "The <strong>do_action</strong> argument is an advanced webhook for developers. It allows you to fire a custom WordPress hook after the <strong>manage_term_meta</strong> action was fired.", $translation_ident ); ?>
 <br>
 <?php echo WPWHPRO()->helpers->translate( "You can use it to trigger further logic after the webhook action. Here's an example:", $translation_ident ); ?>
@@ -475,6 +474,81 @@ function my_custom_callback_function( $term_id, $return_args ){
         <br>
         <?php echo WPWHPRO()->helpers->translate( "Contains all the data we send back to the webhook action caller. The data includes the following key: msg, success, data", $translation_ident ); ?>
     </li>
+</ol>
+		<?php
+		$parameter['do_action']['description'] = ob_get_clean();
+
+			ob_start();
+			?>
+            <pre>{
+    "success": true,
+    "msg": "Taxonomy term meta was upated successfully.",
+    "data": {
+        "term_id": "91",
+        "taxonomy": "category",
+        "get_term_by": false,
+        "term_value": "91",
+        "manage_meta_data": {
+            "success": true,
+            "msg": "The meta data was successfully executed.",
+            "data": {
+                "add_term_meta": [
+                    {
+                        "meta_key": "first_add_custom_key",
+                        "meta_value": "Some custom value",
+                        "unique": false,
+                        "response": 26
+                    },
+                    {
+                        "meta_key": "second_add_custom_key",
+                        "meta_value": {
+                            "some_array_key": "Some array Value"
+                        },
+                        "unique": true,
+                        "response": 27
+                    }
+                ],
+                "update_term_meta": [
+                    {
+                        "meta_key": "update_custom_key",
+                        "meta_value": "Some custom value",
+                        "prev_value": false,
+                        "response": 28
+                    },
+                    {
+                        "meta_key": "second_update_custom_key",
+                        "meta_value": "The new value",
+                        "prev_value": "The previous value",
+                        "response": 29
+                    }
+                ]
+            }
+        },
+        "do_action": ""
+    }
+}
+        </pre>
+			<?php
+			$returns_code = ob_get_clean();
+
+			ob_start();
+?>
+
+<?php echo WPWHPRO()->helpers->translate( "This webhook action is used to update taxonomy term meta on a taxonomy term via a webhook call.", $translation_ident ); ?>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "This description is uniquely made for the <strong>manage_term_meta</strong> webhook action.", $translation_ident ); ?>
+<br>
+<?php echo WPWHPRO()->helpers->translate( "In case you want to first understand on how to setup webhook actions in general, please check out the following manuals:", $translation_ident ); ?>
+<br>
+<a title="Go to ironikus.com/docs" target="_blank" href="https://ironikus.com/docs/article-categories/get-started/">https://ironikus.com/docs/article-categories/get-started/</a>
+<br><br>
+<h4><?php echo WPWHPRO()->helpers->translate( "How to use <strong>manage_term_meta</strong>", $translation_ident ); ?></h4>
+<ol>
+    <li><?php echo WPWHPRO()->helpers->translate( "The first argument you need to set within your webhook action request is the <strong>action</strong> argument. This argument is always required. Please set it to <strong>manage_term_meta</strong>.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "It is also required to set the <strong>taxonomy</strong> argument. This must contain the taxonomy slug.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "Another argument that needs to be set is the <strong>term_value</strong> argument, which should contain either the term id, the term slug or the term name. Please see the <strong>Special Arguments list for further details.</strong>", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "Lastly, it is required to add the <strong>manage_meta_data</strong> argument, which must contain a JSON formatted string as stated below within the <strong>Special Arguments</strong> list.", $translation_ident ); ?></li>
+    <li><?php echo WPWHPRO()->helpers->translate( "All the other arguments are optional and just extend the process of managing the taxonomy term meta.", $translation_ident ); ?></li>
 </ol>
             <?php
 			$description = ob_get_clean();
@@ -508,22 +582,19 @@ function my_custom_callback_function( $term_id, $return_args ){
 
 			if( empty( $term_value ) ){
 				$return_args['msg'] = WPWHPRO()->helpers->translate( "The term_value argument cannot be empty.", 'action-manage_term_meta' );
-				WPWHPRO()->webhook->echo_response_data( $return_args );
-				die();
+				return $return_args;
 			}
 
 			if( ! is_numeric( $term_value ) ){
 				$term_obj = get_term_by( $get_term_by, $term_value, $taxonomy );
 				if( empty( $term_obj ) ){
 					$return_args['msg'] = WPWHPRO()->helpers->translate( "We could not find any term for your given data.", 'action-manage_term_meta' );
-					WPWHPRO()->webhook->echo_response_data( $return_args );
-					die();
+					return $return_args;
 				}
 
 				if( is_array( $term_obj ) ){
 					$return_args['msg'] = WPWHPRO()->helpers->translate( "We found multiple entries for your given taxonomy term. Please specify the taxonomy argument.", 'action-manage_term_meta' );
-					WPWHPRO()->webhook->echo_response_data( $return_args );
-					die();
+					return $return_args;
 				}
 
 				$term_id = $term_obj->term_id;
@@ -548,9 +619,7 @@ function my_custom_callback_function( $term_id, $return_args ){
 				do_action( $do_action, $term_id, $return_args );
 			}
 
-			WPWHPRO()->webhook->echo_response_data( $return_args );
-
-			die();
+			return $return_args;
 		}
 
 		public function manage_term_meta_data( $term_id, $term_meta_data ){
